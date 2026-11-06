@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+
   workflow_dispatch:
 
 permissions:
@@ -17,24 +18,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Download repository code
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      # Step 2: Authenticate with AWS using OIDC
       - name: Configure AWS Credentials using OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ap-southeast-2
 
-      - name: Upload Portfolio to S3
+      # Step 3: Upload portfolio files to S3
+      - name: Deploy Website to S3
         run: |
           aws s3 sync . s3://mourima-serverless-portfolio-255198790951-ap-southeast-2-an \
             --delete \
             --exclude ".git/*" \
             --exclude ".github/*"
 
+      # Step 4: Refresh CloudFront cache
       - name: Invalidate CloudFront Cache
         run: |
           aws cloudfront create-invalidation \
             --distribution-id E2B2AN9Z4ZXM8H \
             --paths "/*"
+
+      # Step 5: Deployment completed
+      - name: Deployment Success
+        run: echo "Portfolio successfully deployed to AWS!"
